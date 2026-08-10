@@ -1,0 +1,6 @@
+# @package superpixels
+# Default: dependency-free, via scikit-image. Partitions differently from DISF,
+# so it does not reproduce the published results.
+_target_: spifil.superpixels.slic.SLIC
+compactness: 10.0
+sigma: 0.0

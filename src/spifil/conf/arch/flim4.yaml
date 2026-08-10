@@ -1,0 +1,8 @@
+# @package arch
+# Four layers, kernel 3, 16/32/48/64 channels.
+stdev_factor: 0.01
+layers:
+  - {kernel_size: 3, out_channels: 16}
+  - {kernel_size: 3, out_channels: 32}
+  - {kernel_size: 3, out_channels: 48}
+  - {kernel_size: 3, out_channels: 64}

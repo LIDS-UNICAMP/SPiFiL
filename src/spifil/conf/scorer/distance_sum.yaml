@@ -1,0 +1,3 @@
+# @package scorer
+# Unsupervised baseline: total pairwise distance to every other sample.
+_target_: spifil.scoring.DistanceSumScorer

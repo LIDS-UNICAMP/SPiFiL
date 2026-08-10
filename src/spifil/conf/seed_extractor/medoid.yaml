@@ -1,0 +1,4 @@
+# @package seed_extractor
+# Default: feature-space medoid — the seed rule the SPiFiL paper defines.
+# Always inside its region, and representative of appearance rather than shape.
+_target_: spifil.superpixels.centers.Medoids

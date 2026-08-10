@@ -1,0 +1,3 @@
+# @package selector
+# Per-class top-N by rank, no diversity term — the ranking-only baseline.
+_target_: spifil.selection.TopN

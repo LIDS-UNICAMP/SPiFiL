@@ -1,0 +1,4 @@
+# @package metric
+# Plain Euclidean distance — no covariance to fit. The default for the
+# selector's diversity term, and usable for scoring too.
+_target_: spifil.metrics.Euclidean

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # The full check, on the one configuration where the optional DISF backend
+  # is installable. Runs ./ci.sh so "green here" and "green locally" are the
+  # same command.
+  full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install PyIFT's system libraries
+        run: sudo apt-get update && sudo apt-get install -y liblapack3 libblas3
+      - run: ./ci.sh
+
+  # The rest of the supported range, without the DISF extra: its tests skip,
+  # and what is checked is that the package installs and works there at all.
+  interpreters:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --frozen --python ${{ matrix.python-version }}
+      - run: uv run --frozen pytest -q

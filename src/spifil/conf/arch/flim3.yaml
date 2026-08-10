@@ -1,0 +1,7 @@
+# @package arch
+# Three layers, kernel 3, 16/32/32 channels. The default.
+stdev_factor: 0.01
+layers:
+  - {kernel_size: 3, out_channels: 16}
+  - {kernel_size: 3, out_channels: 32}
+  - {kernel_size: 3, out_channels: 32}

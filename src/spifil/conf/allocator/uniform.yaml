@@ -1,0 +1,4 @@
+# @package allocator
+# Equal split: per_class = out_channels // n_classes (integer division, so a
+# non-divisible budget under-produces filters).
+_target_: spifil.allocation.UniformAllocator

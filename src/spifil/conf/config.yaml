@@ -1,0 +1,37 @@
+# Root experiment config.
+#
+# The defaults below run everywhere `pip install spifil` runs. To reproduce the
+# published SPiFiL setup, install the optional DISF backend and override:
+#
+#     spifil-fit superpixels=disf n_superpixels=50 arch=paper \
+#         data.images_dir=... data.masks_dir=...
+defaults:
+  - spifil_schema          # structured-config schema (type checking)
+  - arch: flim3
+  - color: labnorm
+  - superpixels: slic      # `disf` needs the optional `disf` extra
+  - seed_extractor: medoid
+  - metric: mahalanobis
+  - scorer: fisher
+  - allocator: uniform
+  - selector: diversity
+  - strategy: sequential
+  - _self_
+
+data:
+  images_dir: ???
+  masks_dir: ???
+
+n_superpixels: 100         # candidate seeds per image, before ranking
+
+# Layer to restart from: deletes checkpoints from here up before fitting.
+# null keeps whatever is on disk and resumes after it.
+resume_from: null
+
+output_dir: ${hydra:runtime.output_dir}   # Hydra's run dir IS the output dir
+device: cpu
+seed: 42
+
+hydra:
+  job:
+    chdir: false           # never change the working directory

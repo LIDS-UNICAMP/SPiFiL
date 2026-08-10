@@ -1,0 +1,3 @@
+# @package seed_extractor
+# Coordinate mean. Cheapest, but may fall outside a non-convex superpixel.
+_target_: spifil.superpixels.centers.Centroids

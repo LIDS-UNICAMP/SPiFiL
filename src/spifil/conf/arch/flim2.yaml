@@ -1,0 +1,6 @@
+# @package arch
+# Two layers, kernel 3, 16/32 channels — the quickest useful stack.
+stdev_factor: 0.01
+layers:
+  - {kernel_size: 3, out_channels: 16}
+  - {kernel_size: 3, out_channels: 32}

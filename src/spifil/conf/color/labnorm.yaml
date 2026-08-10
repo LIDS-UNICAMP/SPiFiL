@@ -1,0 +1,3 @@
+# @package color
+# Normalized Lab. Not a textbook CIELAB conversion — see spifil.color.
+_target_: spifil.color.LabNorm

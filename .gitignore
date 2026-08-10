@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Environments and tool caches
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Hydra output directories
+outputs/
+multirun/
+
+# examples/data IS tracked: the one-image-per-class training sets are what
+# make the published results reproducible from a clone. Keep them out of any
+# blanket image ignore rule.
+!examples/data/**/*.png

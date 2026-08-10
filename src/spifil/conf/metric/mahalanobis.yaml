@@ -1,0 +1,7 @@
+# @package metric
+# Default scoring metric: covariance with Ledoit-Wolf shrinkage, which stays
+# invertible when there are fewer patches than features.
+# estimator=empirical uses the plain sample covariance instead, and falls back
+# to Euclidean when that is singular.
+_target_: spifil.metrics.Mahalanobis
+estimator: shrinkage

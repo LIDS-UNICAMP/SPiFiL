@@ -1,0 +1,9 @@
+# @package superpixels
+# The algorithm the published results use. Needs the vendored PyIFT wheel
+# (`uv sync --group disf`); see spifil.superpixels.disf.
+_target_: spifil.superpixels.disf.DISF
+# null -> 10 x n_superpixels initial seeds, pruned down to n_superpixels.
+n_init_seeds: null
+# 1.0 (4-connectivity) is load-bearing: sqrt(2) makes DISF leak across
+# object boundaries.
+adjacency_radius: 1.0

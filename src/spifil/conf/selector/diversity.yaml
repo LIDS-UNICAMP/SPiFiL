@@ -1,0 +1,6 @@
+# @package selector
+# Default: greedy rank/diversity trade-off.
+# alpha=1 -> pure rank, alpha=0 -> pure diversity.
+_target_: spifil.selection.DiversitySelector
+alpha: 0.5
+pool_factor: 3

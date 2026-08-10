@@ -1,0 +1,3 @@
+# @package strategy
+# Default: layers 1..N once, forward only.
+_target_: spifil.strategies.SequentialStrategy

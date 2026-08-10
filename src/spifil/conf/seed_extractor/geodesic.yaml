@@ -1,0 +1,3 @@
+# @package seed_extractor
+# Shape-based center, always inside its region. Needs the `disf` extra.
+_target_: spifil.superpixels.centers.GeodesicCenters

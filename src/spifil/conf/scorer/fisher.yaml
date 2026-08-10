@@ -1,0 +1,3 @@
+# @package scorer
+# Default: avg(inter-class distance) / avg(intra-class distance).
+_target_: spifil.scoring.FisherScorer
