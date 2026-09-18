@@ -1,24 +1,14 @@
-# SPiFiL — Superpixel Filter Learning
+# **SPiFiL**: **S**uper**Pi**xel **Fi**lter **L**earning
 
-**Convolutional encoders learned without backpropagation.** A superpixel
-algorithm partitions each training image inside its mask; the center of every
-superpixel becomes a candidate feature point; patches around those points are
-ranked by how well they separate classes (Fisher score under a Mahalanobis
-metric) and selected with a diversity-aware greedy pick; and the chosen patches
-*become* the convolution kernels, with z-score normalization folded into the
-weights and bias. Repeat per layer and the result is a plain PyTorch
-`nn.Module` --- no optimizer, no epochs, no gradients anywhere in the fit.
+> **Convolutional encoders learned without backpropagation.** A superpixel algorithm partitions each training image inside its mask; the center of every superpixel becomes a candidate feature point; patches around those points are ranked by how well they separate classes (Fisher score under a Mahalanobis metric) and selected with a diversity-aware greedy pick; and the chosen patches *become* the convolution kernels, with z-score normalization folded into the weights and bias. Repeat per layer, and the result is a plain PyTorch `nn.Module` (no optimizer, no epochs, no gradients anywhere in the fit).
 
-This is the reference implementation for the paper *Representation Learning
-from Superpixels: Lightweight CNN Encoders Under Data Scarcity*, which learns
-encoders from **one image per class** and reports competitive accuracy against
-CNN baselines two to three orders of magnitude larger.
+This is the reference implementation for the paper *"Representation Learning from Superpixels: Lightweight CNN Encoders Under Data Scarcity"*, which learns encoders from **one image per class** and reports competitive accuracy against CNN baselines from roughly 20x (SqueezeNet) to over 2,500x (VGG16) larger.
 
 ```python
 from spifil import ArchSpec, LayerSpec, Learner, SpifilDataset, load_encoder
 
 data = SpifilDataset.from_folders("images/", "masks/")   # class = filename prefix
-learn = Learner(data, ArchSpec(layers=[LayerSpec(kernel_size=3, out_channels=n)
+learn = Learner(data, ArchSpec(layers=[LayerSpec(kernel_size=5, out_channels=n)
                                        for n in (16, 32, 48)]))
 learn.fit()
 learn.export("runs/my-model")
@@ -32,15 +22,11 @@ encoder = load_encoder("runs/my-model").freeze()         # a torch nn.Module
 pip install -e .            # or, from a clone with uv:  uv sync
 ```
 
-Python 3.10+, and the only hard dependencies are torch, numpy, scikit-image and
-hydra-core. This installs everything except DISF, and defaults to SLIC
-superpixels so the whole pipeline runs out of the box on any platform.
+Python 3.10+, and the only hard dependencies are torch, numpy, scikit-image, and hydra-core. This installs everything except DISF and defaults to SLIC superpixels, so the whole pipeline runs out of the box on any platform.
 
-### The DISF backend (optional, needed to reproduce the paper)
+### The DISF backend (optional, required to reproduce the paper)
 
-The published results use **DISF** superpixels and its geodesic centers, which
-come from PyIFT — a compiled extension, shipped here as a prebuilt wheel in
-[`vendor/`](vendor/):
+The published results use **DISF** superpixels and their medoid centers, which come from PyIFT, a compiled extension shipped here as a prebuilt wheel in [`vendor/`](vendor/). The paper's superpixel centers are `seed_extractor=medoid`, the default; `seed_extractor=geodesic` is an alternative, shape-based center. To install DISF:
 
 ```bash
 sudo apt-get install -y liblapack3 libblas3    # PyIFT links these dynamically
@@ -49,26 +35,17 @@ uv sync --group disf                           # with uv
 pip install vendor/pyift-0.1-cp312-cp312-linux_x86_64.whl    # with pip
 ```
 
-The wheel is built for **CPython 3.12 on Linux x86-64**; anywhere else it
-installs nothing and SLIC remains available. SLIC partitions differently, so
-it does not reproduce the paper's numbers.
+The wheel is built for **CPython 3.12 on Linux x86-64**; elsewhere, it installs nothing, and SLIC remains available. SLIC partitions differently, so it does not reproduce the paper's numbers.
 
 > Install PyIFT from the wheel above, not from PyPI.
 
 ## Quickstart
 
-**[examples/quickstart.ipynb](examples/quickstart.ipynb)** walks the whole path
-with pictures: the dataset, superpixels and seeds, the fit, the selected
-patches that became filters, what each layer encodes, export and reload, and a
-task head trained on the frozen encoder. It runs on a fresh clone, on the
-bundled data below. The test suite executes it, so it cannot silently stop
-working.
+**[examples/quickstart.ipynb](examples/quickstart.ipynb)** walks the whole path with pictures: the dataset, superpixels and seeds, the fit, the selected patches that became filters, what each layer encodes, export and reload, and a task head trained on the frozen encoder, or the paper's linear SVM fitted on it. It runs on a fresh clone, on the bundled data below. The test suite executes it, so it cannot silently stop working.
 
 ### The bundled datasets
 
-[`examples/data/`](examples/data/README.md) ships the **training images the
-published encoders were learned from** --- one image per class, for each of
-three stratified splits, on all three parasitology datasets:
+[`examples/data/`](examples/data/README.md) ships the **training images the published encoders were learned from**: one image per class, for each of three stratified splits, on all three parasitology datasets.
 
 | Dataset  | Classes | Images per split | Splits |
 |---|---|---|---|
@@ -82,34 +59,40 @@ examples/data/eggs/split1/
 └── masks/000001_00000333.png     where superpixels may be placed
 ```
 
-They are a subset of the [Intestinal Parasites
-Datasets](https://github.com/LIDS-UNICAMP/intestinal-parasites-datasets) from
-LIDS-UNICAMP --- go there for the full data and the split definitions, which
-is what the downstream classifiers are trained and evaluated on.
-[`examples/data/README.md`](examples/data/README.md) has the class mapping and
-the terms of use.
+They are a subset of the [Intestinal Parasites Datasets](https://github.com/LIDS-UNICAMP/intestinal-parasites-datasets) from LIDS-UNICAMP; see there for the full data and the split definitions, which the downstream classifiers are trained and evaluated on, pinned to the version the paper used (see [The published splits](#the-published-splits)). [`examples/data/README.md`](examples/data/README.md) has the class mapping and the terms of use.
 
-That layout is the whole data format, and your own data follows it: the class
-is the integer prefix of the filename, and a mask pairs with an image by name.
-Masks are the dataset's own semantic masks --- SPiFiL asks for **no extra
-annotation**. They keep every candidate filter on the class of interest rather
-than on background. Images without a mask still work; the whole image is then
-employed to extract superpixels and guide filter learning.
+That layout is the whole data format, and your own data follows it: the class is the integer prefix of the filename, and a mask pairs with an image by name. Masks are the dataset's own semantic masks; SPiFiL asks for **no extra annotation**. They keep every candidate filter on the class of interest rather than on the background. Images without a mask still work; the whole image is then employed to extract superpixels and guide filter learning.
 
 ### Reproducing the published encoders
 
 ```bash
 spifil-fit data.images_dir=examples/data/eggs/split1/images \
            data.masks_dir=examples/data/eggs/split1/masks \
-           superpixels=disf n_superpixels=50 arch=paper
+           superpixels=disf n_superpixels=50 arch=paper \
+           selector.alpha=0.5 selector.pool_factor=5
 ```
 
-`arch=paper` is the 16/32/48 stack and `superpixels=disf` needs the optional
-backend above; repeat over `split1`–`split3` for the reported mean and
-standard deviation. A quick way to confirm the configuration is right is the
-filter count a fit reports: `eggs` and `larvae` build 16/32/48, while `cysts`
-builds **12/30/48**, because 6 classes divide 16 and 32 with a remainder
-(excluding impurities).
+`arch=paper` is the 5x5, 16/32/48 stack (52,496 parameters), `selector.pool_factor=5` is the paper's pool factor γ (the library default is 3), and `superpixels=disf` needs the optional backend above; fit one encoder per split, `split1`–`split3`. A quick way to confirm the configuration is right is the filter count that a fit reports: `eggs` and `larvae` build 16/32/48, while `cysts` builds **12/30/48**, because 6 classes divide 16 and 32 with a remainder (excluding impurities).
+
+### The published splits
+
+The paper's results use the dataset splits at tag [`spifil-mirasol-2026`](https://github.com/LIDS-UNICAMP/intestinal-parasites-datasets/tree/spifil-mirasol-2026) (commit `0a19e28`), **not** the current default branch:
+
+```bash
+git clone https://github.com/LIDS-UNICAMP/intestinal-parasites-datasets
+cd intestinal-parasites-datasets
+git checkout spifil-mirasol-2026        # or: git checkout 0a19e28
+```
+
+The splits were later regenerated with different ratios (40/10/50), and under those, some of the images in `examples/data/` fall in the *test* set of their own split. Pairing the bundled encoders with the current splits therefore leaks test data into training; use the pinned version.
+
+At that version, for each dataset and `splitN`:
+
+| File | Contents | Used for |
+|---|---|---|
+| `splits/splitN.json` | `train` / `test`, 50/50, stratified (`validation` equals `train`) | the one image per class the encoder is learned from, drawn from `train` |
+| `splits_incremental/splitN/data_descriptor_perc{P}.json` | `train` = P% of the train half, `validation` = the rest of it, same `test` | training fractions P = 1, 5, 25, 50, 75, 100 (at 100, `train` and `validation` coincide) |
+| `splits_incremental/splitN/data_descriptor_perc75.json` | the 75/25 train/validation partition | selecting `n_f`, α and γ, on `validation` only |
 
 ### Fitting, in full
 
@@ -122,13 +105,13 @@ from spifil import (
 data = SpifilDataset.from_folders("images/", "masks/")
 learn = Learner(
     data,
-    ArchSpec(layers=[LayerSpec(kernel_size=3, out_channels=n)
+    ArchSpec(layers=[LayerSpec(kernel_size=5, out_channels=n)
                      for n in (16, 32, 48)]),
     superpixels=DISF(),              # SLIC() with no optional dependency
     seed_extractor=Medoids(),        # the paper's seed rule
     metric=Mahalanobis(),
     scorer=FisherScorer(),
-    selector=DiversitySelector(alpha=0.5, pool_factor=3),
+    selector=DiversitySelector(alpha=0.5, pool_factor=5),   # the paper's alpha, gamma
     cbs=[ProgressBar()],
     n_superpixels=50,
 )
@@ -149,16 +132,11 @@ features = encoder(images)             # (B, H, W, 3) uint8 -> (B, C, H', W')
 mid = encoder(images, upto=2)          # an earlier, higher-resolution layer
 ```
 
-`load_encoder` returns the color transform *with* the network, and that
-pairing matters: a `SpifilNet` alone consumes layer-0 features rather than
-images, so handing a downstream model the network by itself is handing it half
-an artifact --- and the failure is silent, since the shapes match and only the
-numbers are wrong.
+`load_encoder` returns the color transform *with* the network, and that pairing matters: a `SpifilNet` alone consumes layer-0 features rather than images, so handing a downstream model the network by itself is handing it half an artifact --- and the failure is silent, since the shapes match and only the numbers are wrong.
 
 ## From the command line
 
-Experiments are Hydra config groups, so components are swapped and swept
-without touching code:
+Experiments are Hydra config groups, so components are swapped and swept without touching code:
 
 ```bash
 spifil-fit data.images_dir=... data.masks_dir=...
@@ -166,8 +144,7 @@ spifil-fit scorer=distance_sum selector.alpha=0.7
 spifil-fit -m selector.alpha=0.3,0.5,0.7                   # a sweep
 ```
 
-Hydra's run directory *is* the output directory, and the resolved config lands
-in `.hydra/config.yaml` beside the results.
+Hydra's run directory *is* the output directory, and the resolved config lands in `.hydra/config.yaml` beside the results.
 
 | Group | Options | Default |
 |---|---|---|
@@ -183,9 +160,7 @@ in `.hydra/config.yaml` beside the results.
 
 ## Extending it
 
-Every stage is a `Protocol`, injected into the `Learner`, with a one-line
-default. Implement the call signature and pass your object in --- no
-subclassing, no registry, no edits to the pipeline:
+Every stage is a `Protocol`, injected into the `Learner`, with a one-line default. Implement the call signature and pass your object in; no subclassing, no registry, no edits to the pipeline:
 
 | Protocol | Replaces | Signature |
 |---|---|---|
@@ -200,22 +175,13 @@ subclassing, no registry, no edits to the pipeline:
 | `FitStrategy` | the order layers are visited | `.run(learner)` |
 | `Callback` | observing or steering the fit | event methods on `Learner` |
 
-Scoring and selection are `O(N²)` in the number of seed patches and run on
-whatever device the tensors live on, so `device="cuda"` works without any
-change to the components.
+Scoring and selection are `O(N²)` in the number of seed patches and run on whatever device the tensors live on, so `device="cuda"` works without any change to the components.
 
 ## Choosing `n_superpixels` and the number of images
 
-Every scorer inverts a `D x D` covariance, where `D = kernel_size² x in_channels`
---- 27 at layer 1 with 3x3 kernels over 3 bands, and hundreds deeper in the
-stack. With `N` seed patches, `N <= D` makes the empirical covariance
-rank-deficient. SPiFiL uses Ledoit-Wolf shrinkage, so the metric stays
-*defined* for any `N`, and warns when this happens.
+Every scorer inverts a `D x D` covariance, where `D = kernel_size² × in_channels` --- 75 at layer 1 with the paper's 5x5 kernels over 3 bands, and 400 and 800 at layers 2 and 3. With `N` seed patches, `N <= D` makes the empirical covariance rank-deficient. SPiFiL uses Ledoit-Wolf shrinkage, so the metric stays *defined* for any `N`, and warns when this happens.
 
-Defined is not informative. For a statistically meaningful metric aim for
-`N > D`, and get there by **adding images rather than superpixels**: seeds
-merge under pooling, so `N` saturates as `n_superpixels` grows, while each
-added image contributes an independent grid of candidates.
+Defined is not informative. For a statistically meaningful metric, aim for `N > D`, and get there by **adding images rather than superpixels**: seeds merge under pooling, so `N` saturates as `n_superpixels` grows. In contrast, each added image contributes an independent grid of candidates.
 
 ## Development
 
@@ -232,55 +198,38 @@ uv run ruff check src tests examples
 uv run mypy src
 ```
 
-The tests ship no images: `tests/conftest.py` draws small synthetic datasets
-from a fixed seed, so `pytest` works on a fresh clone with nothing downloaded.
+The tests ship no images: `tests/conftest.py` draws small synthetic datasets from a fixed seed, so `pytest` works on a fresh clone with nothing downloaded.
 
 ## Porting disclaimer
 
-SPiFiL was first written in C, and this package is a port of that
-implementation to Python and PyTorch, published so the method is usable and
-extensible without the original toolchain.
+SPiFiL was first written in C, and this package ports that implementation to Python and PyTorch, so the method is usable and extensible without the original toolchain.
 
-Reproducing the C results exactly was a requirement to validate the port, and a
-few design decisions were made to serve it. They are faithful, not necessarily
-optimal, and they are documented where they live in the code:
+Reproducing the C results exactly was necessary to validate the port, and we made a few design decisions to support it. They are faithful, not necessarily optimal, and they are documented where they live in the code:
 
-- **The color transform** (`spifil.color.LabNorm`) reproduces the original
-  normalized-Lab conversion including its quirks --- an asymmetric BT.2020 /
-  BT.601 round trip, no sRGB gamma decode, fixed normalization constants, and
-  float32 rounding at specific intermediate steps. It is not a textbook CIELAB
-  conversion.
-- **Filter budgets are split by plain integer division**
-  (`spifil.allocation.UniformAllocator`), so a layer asked for 16 filters over
-  6 classes produces 12 and the remainder is dropped rather than distributed.
-- **The candidate-pool cap is shared across classes**
-  (`spifil.selection.DiversitySelector`), so a class with few ranked seeds can
-  limit the pool available to a well-stocked one.
-- **The layer loop is strictly forward and single-pass**
-  (`spifil.strategies.SequentialStrategy`), with no revisiting of earlier
-  layers once later ones exist.
+- **The color transform** (`spifil.color.LabNorm`) reproduces the original normalized-Lab conversion including its quirks: an asymmetric BT.2020/BT.601 round trip, no sRGB gamma decode, fixed normalization constants, and float32 rounding at specific intermediate steps. It is not a textbook CIELAB conversion.
+- **Filter budgets are split by plain integer division** (`spifil.allocation.UniformAllocator`), so a layer asked for 16 filters over 6 classes produces 12 and the remainder is dropped rather than distributed.
+- **The candidate-pool cap is shared across classes** (`spifil.selection.DiversitySelector`), so a class with few ranked seeds can limit the pool available to a well-stocked one.
+- **The layer loop is strictly forward and single-pass** (`spifil.strategies.SequentialStrategy`), with no revisiting of earlier layers once later ones exist.
 
-Future versions will lift these limits and optimize the framework with Python
-in mind alone, rather than as a translation: a color transform chosen on its
-merits, remainder-aware and difficulty-aware allocation, per-class pooling, and
-alternative fit strategies. Each is already a swappable component, so the
-change will be in the defaults rather than in the architecture.
+The Mahalanobis metric uses Ledoit-Wolf shrinkage by default (`metric.estimator=shrinkage`), as in the published results. `metric.estimator=empirical` uses the plain sample covariance instead and falls back to Euclidean distance when it is singular.
+
+Future versions will lift these limits and optimize the framework with Python in mind alone, rather than as a translation: a color transform chosen on its merits, remainder-aware and difficulty-aware allocation, per-class pooling, and alternative fit strategies. Each is already a swappable component so that the change will be in the defaults rather than the architecture.
 
 ## Citation
 
 ```bibtex
 @inproceedings{spifil,
-  title     = {Representation Learning from Superpixels:
-               Lightweight CNN Encoders Under Data Scarcity},
-  author    = {TODO},
-  booktitle = {TODO},
-  year      = {2026}
+  title     = {Representation Learning from Superpixels: Lightweight CNN Encoders Under Data Scarcity},
+  author    = {Salvagnini, Felipe C. R. and Miranda, Maria A. K. and Soares, Gilson J. and Silva, Mateus O. and Santos, Cid and Neto, Jeova F. S. R. and Guimar{\~a}es, Silvio J. F. and Marques, Oge and Falc{\~a}o, Alexandre X.},
+  booktitle = {Medical Image Computing in Resource-Constrained Settings (MIRASOL 2026), MICCAI 2026 Workshops},
+  series    = {Lecture Notes in Computer Science},
+  publisher = {Springer},
+  year      = {2026},
+  pages     = {TODO},
+  doi       = {TODO}
 }
 ```
 
 ## License
 
-Apache 2.0 --- see [LICENSE](LICENSE). Two things here are not covered by it:
-the vendored PyIFT wheel, a third-party component under its own terms, and the
-images under `examples/data/`, which belong to the [dataset
-authors](https://github.com/LIDS-UNICAMP/intestinal-parasites-datasets).
+Apache 2.0 (see [LICENSE](LICENSE)). Two things here are not covered by it: the vendored PyIFT wheel, a third-party component under its own terms, and the images under `examples/data/`, which belong to the [dataset authors](https://github.com/LIDS-UNICAMP/intestinal-parasites-datasets).

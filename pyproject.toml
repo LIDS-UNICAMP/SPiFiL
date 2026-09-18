@@ -55,6 +55,7 @@ dev = [
     "nbformat>=5.9",
     "nbclient>=0.10",
     "ipykernel>=6.29",
+    "scikit-learn>=1.4",
 ]
 
 # PyIFT is a compiled extension rather than a PyPI distribution, so a prebuilt

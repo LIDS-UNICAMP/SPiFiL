@@ -1,9 +1,9 @@
 # @package arch
-# The encoder reported in the SPiFiL paper: 3 layers, kernel 3, 16/32/48.
-# The Eggs dataset there uses 12/30/48 instead, which is
-#   arch=paper arch.layers.0.out_channels=12 arch.layers.1.out_channels=30
+# The encoder reported in the SPiFiL paper: 3 layers, kernel 5, 16/32/48
+# (52,496 parameters). On Cysts the per-class integer split builds 12/30/48
+# from the same request; no override is needed.
 stdev_factor: 0.01
 layers:
-  - {kernel_size: 3, out_channels: 16}
-  - {kernel_size: 3, out_channels: 32}
-  - {kernel_size: 3, out_channels: 48}
+  - {kernel_size: 5, out_channels: 16}
+  - {kernel_size: 5, out_channels: 32}
+  - {kernel_size: 5, out_channels: 48}
