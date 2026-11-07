@@ -99,7 +99,7 @@ At that version, for each dataset and `splitN`:
 ```python
 from spifil import (
     DISF, ArchSpec, DiversitySelector, FisherScorer, LayerSpec, Learner,
-    Mahalanobis, Medoids, ProgressBar, SpifilDataset,
+    Mahalanobis, Medoids, ProgressText, SpifilDataset,
 )
 
 data = SpifilDataset.from_folders("images/", "masks/")
@@ -112,7 +112,7 @@ learn = Learner(
     metric=Mahalanobis(),
     scorer=FisherScorer(),
     selector=DiversitySelector(alpha=0.5, pool_factor=5),   # the paper's alpha, gamma
-    cbs=[ProgressBar()],
+    cbs=[ProgressText()],
     n_superpixels=50,
 )
 learn.fit()

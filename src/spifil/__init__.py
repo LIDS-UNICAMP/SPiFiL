@@ -1,7 +1,7 @@
 """SPiFiL: Superpixel-based Filter Learning."""
 
 from spifil.allocation import FilterAllocator, UniformAllocator
-from spifil.callbacks import Callback, Checkpoint, CSVLogger, ProgressBar
+from spifil.callbacks import Callback, Checkpoint, CSVLogger, ProgressText
 from spifil.color import ColorTransform, Identity, LabNorm
 from spifil.config import ArchSpec, LayerSpec
 from spifil.data import Sample, SpifilDataset
@@ -78,7 +78,7 @@ __all__ = [
     "Medoids",
     "PatchSet",
     "PreparedImage",
-    "ProgressBar",
+    "ProgressText",
     "Sample",
     "Scorer",
     "SeedExtractor",

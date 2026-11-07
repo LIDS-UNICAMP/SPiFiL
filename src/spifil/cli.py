@@ -17,7 +17,7 @@ import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf
 
-from spifil.callbacks import Checkpoint, CSVLogger, ProgressBar
+from spifil.callbacks import Checkpoint, CSVLogger, ProgressText
 from spifil.config import ArchSpec, LayerSpec, register_configs
 from spifil.data import SpifilDataset
 from spifil.learner import Learner
@@ -61,7 +61,7 @@ def build_learner(cfg: DictConfig) -> Learner:
         cbs=[
             Checkpoint(f"{output_dir}/checkpoints", resume_from=cfg.resume_from),
             CSVLogger(output_dir),
-            ProgressBar(),
+            ProgressText(),
         ],
     )
 

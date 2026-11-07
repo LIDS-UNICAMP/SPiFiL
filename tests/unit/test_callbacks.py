@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from spifil import Callback, Checkpoint, CSVLogger, Learner, ProgressBar
+from spifil import Callback, Checkpoint, CSVLogger, Learner, ProgressText
 from spifil.learner import EVENTS
 from tests.unit.test_learner import make_learner
 
@@ -194,11 +194,11 @@ class TestCSVLogger:
         assert (tmp_path / "layers.csv").read_text() == first
 
 
-class TestProgressBar:
+class TestProgressText:
     def test_it_reports_to_the_stream_it_is_given(self, tmp_path: Path) -> None:
         stream = io.StringIO()
 
-        learn = fitted(tmp_path, cbs=[ProgressBar(stream=stream)])
+        learn = fitted(tmp_path, cbs=[ProgressText(stream=stream)])
 
         output = stream.getvalue()
         assert f"fitting {learn.n_layers} layers" in output
@@ -216,7 +216,7 @@ class TestProgressBar:
                 LayerSpec(kernel_size=3, out_channels=16),
             ]
         )
-        fitted(tmp_path, arch=arch, cbs=[ProgressBar(stream=stream)])
+        fitted(tmp_path, arch=arch, cbs=[ProgressText(stream=stream)])
 
         assert "layer 1: built 6 filters (target 7)" in stream.getvalue()
 

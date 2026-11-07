@@ -25,7 +25,7 @@ from spifil.types import Seeds
 if TYPE_CHECKING:  # pragma: no cover
     from spifil.learner import Learner
 
-__all__ = ["CSVLogger", "Callback", "Checkpoint", "ProgressBar"]
+__all__ = ["CSVLogger", "Callback", "Checkpoint", "ProgressText"]
 
 
 class Callback:
@@ -280,7 +280,7 @@ class CSVLogger(Callback):
             )
 
 
-class ProgressBar(Callback):
+class ProgressText(Callback):
     """Plain-text progress on the layer loop.
 
     One line per step rather than a redrawn bar: the loop has a handful of
