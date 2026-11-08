@@ -11,6 +11,7 @@ No annotation beyond the masks the dataset already ships with is needed.
 
 from __future__ import annotations
 
+import json
 import re
 import warnings
 from collections.abc import Iterator, Sequence
@@ -71,6 +72,8 @@ class SpifilDataset(Sequence[Sample]):
         images_dir: str | Path,
         masks_dir: str | Path | None = None,
         *,
+        json_descriptor: str | Path | None = None,
+        subset: str | None = None,
         extensions: Sequence[str] = IMAGE_EXTENSIONS,
     ) -> SpifilDataset:
         """Discover samples in ``images_dir``, pairing masks from ``masks_dir``.
@@ -80,12 +83,21 @@ class SpifilDataset(Sequence[Sample]):
         with no mask are kept with ``mask_path=None``, meaning "use the whole
         image", and warn.
 
+        With ``json_descriptor`` and ``subset``, only the images listed under
+        that subset are kept, e.g. one split of a train/validation/test file.
+
         Parameters
         ----------
         images_dir
             Folder of images named ``<class_id>_<name>.<ext>``.
         masks_dir
             Folder of binary masks. ``None`` skips masking entirely.
+        json_descriptor
+            JSON file mapping subset names to lists of image filenames,
+            extension included: ``{"train": ["000001_00000003.png", ...]}``.
+            ``None`` keeps every image. Must be given together with ``subset``.
+        subset
+            Key of ``json_descriptor`` to keep, e.g. ``"train"``.
         extensions
             Accepted image extensions, matched case-insensitively.
 
@@ -99,6 +111,8 @@ class SpifilDataset(Sequence[Sample]):
             raise NotADirectoryError(f"images_dir does not exist: {images_dir}")
         masks_dir = Path(masks_dir) if masks_dir is not None else None
 
+        samples_subset = _read_subset(json_descriptor, subset)
+
         suffixes = {e.lower() for e in extensions}
         paths = sorted(
             p
@@ -106,7 +120,16 @@ class SpifilDataset(Sequence[Sample]):
             if p.is_file()
             and not p.name.startswith(".")
             and p.suffix.lower() in suffixes
+            and (samples_subset is None or p.name in samples_subset)
         )
+        if samples_subset is not None:
+            missing = sorted(samples_subset - {p.name for p in paths})
+            if missing:
+                warnings.warn(
+                    f"{len(missing)} file(s) listed under subset {subset!r} were "
+                    f"not found in {images_dir}, e.g. {missing[:3]}; skipping them.",
+                    stacklevel=2,
+                )
 
         samples = []
         for path in paths:
@@ -159,6 +182,30 @@ class SpifilDataset(Sequence[Sample]):
         if mask.ndim == 3:
             mask = mask[:, :, 0]
         return np.ascontiguousarray(mask.astype(np.int32))
+
+
+def _read_subset(
+    json_descriptor: str | Path | None, subset: str | None
+) -> set[str] | None:
+    """Filenames listed under ``subset`` in ``json_descriptor``, or ``None``."""
+    if (json_descriptor is None) != (subset is None):
+        raise ValueError(
+            "json_descriptor and subset must be given together "
+            f"(got json_descriptor={json_descriptor!r}, subset={subset!r})"
+        )
+    if json_descriptor is None or subset is None:
+        return None
+    path = Path(json_descriptor)
+    if not path.is_file():
+        raise FileNotFoundError(f"json_descriptor does not exist: {path}")
+    splits = json.loads(path.read_text())
+    if not isinstance(splits, dict):
+        raise ValueError(f"{path} must hold a JSON object of subset -> filenames")
+    if subset not in splits:
+        raise ValueError(
+            f"subset {subset!r} not found in {path}; available: {sorted(splits)}"
+        )
+    return set(splits[subset])
 
 
 def _find_mask(masks_dir: Path | None, image_path: Path) -> Path | None:

@@ -20,3 +20,6 @@ multirun/
 # make the published results reproducible from a clone. Keep them out of any
 # blanket image ignore rule.
 !examples/data/**/*.png
+
+# Graphify
+graphify_description/

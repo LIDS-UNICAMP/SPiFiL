@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -92,3 +93,52 @@ def test_load_image_is_rgb_uint8(twoclass) -> None:
 def test_missing_images_dir_raises(tmp_path: Path) -> None:
     with pytest.raises(NotADirectoryError):
         SpifilDataset.from_folders(tmp_path / "nope")
+
+
+def _write_descriptor(tmp_path: Path, splits: dict[str, list[str]]) -> Path:
+    path = tmp_path / "descriptor.json"
+    path.write_text(json.dumps(splits))
+    return path
+
+
+def test_json_descriptor_keeps_only_the_subset(tmp_path: Path, twoclass) -> None:
+    names = sorted(p.name for p in twoclass.images.iterdir())
+    descriptor = _write_descriptor(tmp_path, {"train": names[:2], "test": names[2:]})
+
+    data = SpifilDataset.from_folders(
+        twoclass.images, twoclass.masks, json_descriptor=descriptor, subset="train"
+    )
+
+    assert [s.image_path.name for s in data] == names[:2]
+
+
+@pytest.mark.parametrize("given", ["json_descriptor", "subset"])
+def test_json_descriptor_and_subset_must_come_together(
+    tmp_path: Path, twoclass, given: str
+) -> None:
+    descriptor = _write_descriptor(tmp_path, {"train": []})
+    kwargs = {"json_descriptor": descriptor, "subset": "train"}
+
+    with pytest.raises(ValueError, match="must be given together"):
+        SpifilDataset.from_folders(twoclass.images, **{given: kwargs[given]})
+
+
+def test_unknown_subset_lists_the_available_ones(tmp_path: Path, twoclass) -> None:
+    descriptor = _write_descriptor(tmp_path, {"train": [], "test": []})
+
+    with pytest.raises(ValueError, match=r"available: \['test', 'train'\]"):
+        SpifilDataset.from_folders(
+            twoclass.images, json_descriptor=descriptor, subset="val"
+        )
+
+
+def test_json_descriptor_warns_on_missing_files(tmp_path: Path, twoclass) -> None:
+    present = sorted(p.name for p in twoclass.images.iterdir())[0]
+    descriptor = _write_descriptor(tmp_path, {"train": [present, "ghost.png"]})
+
+    with pytest.warns(UserWarning, match="ghost.png"):
+        data = SpifilDataset.from_folders(
+            twoclass.images, twoclass.masks, json_descriptor=descriptor, subset="train"
+        )
+
+    assert [s.image_path.name for s in data] == [present]
